@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Addressable vs. Network TV — Breakeven Game</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: rgba(0,0,0,0.1);
+    --border-md: rgba(0,0,0,0.18);
+    --text: #1a1a18;
+    --text-2: #5c5b56;
+    --text-3: #9a9990;
+    --blue: #185FA5;
+    --blue-light: #E6F1FB;
+    --blue-dark: #0C447C;
+    --green: #3B6D11;
+    --green-light: #EAF3DE;
+    --green-dark: #27500A;
+    --red: #A32D2D;
+    --red-light: #FCEBEB;
+    --amber: #854F0B;
+    --amber-light: #FAEEDA;
+    --amber-dark: #633806;
+    --purple-light: #EEEDFE;
+    --purple: #534AB7;
+    --teal-light: #E1F5EE;
+    --teal: #0F6E56;
+    --r-md: 8px;
+    --r-lg: 12px;
+    --r-xl: 16px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .header-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .header-badge {
+    font-size: 11px;
+    font-weight: 500;
+    background: var(--blue-light);
+    color: var(--blue-dark);
+    padding: 3px 9px;
+    border-radius: 99px;
+  }
+
+  .header-score {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--text-2);
+  }
+
+  .header-score span {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 2rem;
+  }
+
+  .pip {
+    width: 28px;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    transition: background .3s;
+  }
+  .pip.done { background: var(--blue); border-color: var(--blue); }
+  .pip.active { background: #85B7EB; border-color: var(--blue); }
+
+  .pip-label {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-left: 4px;
+  }
+
+  .phase-label {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 99px;
+  }
+  .phase-label.guess { background: var(--purple-light); color: var(--purple); }
+  .phase-label.reveal { background: var(--teal-light); color: var(--teal); }
+
+  .brief-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .brief-tags {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 99px;
+  }
+  .tag-blue { background: var(--blue-light); color: var(--blue-dark); }
+  .tag-amber { background: var(--amber-light); color: var(--amber-dark); }
+  .tag-green { background: var(--green-light); color: var(--green-dark); }
+  .tag-red { background: var(--red-light); color: var(--red); }
+
+  .brief-text {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 680px) {
+    .two-col { grid-template-columns: 1fr; }
+    header { padding: 0.875rem 1rem; }
+    main { padding: 1.25rem 1rem 3rem; }
+  }
+
+  .col-heading {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 10px;
+  }
+
+  .seg-btn {
+    width: 100%;
+    text-align: left;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    cursor: pointer;
+    margin-bottom: 6px;
+    transition: border-color .15s, background .15s;
+    display: block;
+  }
+  .seg-btn:hover { border-color: var(--border-md); background: var(--surface2); }
+  .seg-btn.selected { border: 2px solid var(--blue); background: var(--blue-light); }
+  .seg-btn.selected .seg-name { color: var(--blue-dark); }
+  .seg-btn.correct-reveal { border: 2px solid var(--green); background: var(--green-light); cursor: default; }
+  .seg-btn.over-reveal { border: 1px solid var(--border); background: #fff8f8; cursor: default; }
+  .seg-btn.normal-reveal { border: 1px solid var(--border); background: var(--surface); cursor: default; }
+
+  .seg-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .seg-meta { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+  .running-totals {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .metric {
+    background: var(--surface2);
+    border-radius: var(--r-md);
+    padding: .875rem 1rem;
+  }
+  .metric-label { font-size: 11px; color: var(--text-3); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+  .metric-value { font-size: 20px; font-weight: 500; font-family: 'DM Mono', monospace; color: var(--text); }
+  .metric-value.good { color: var(--green); }
+  .metric-value.bad { color: var(--red); }
+
+  .guess-btn {
+    width: 100%;
+    text-align: left;
+    padding: 10px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--surface);
+    margin-bottom: 6px;
+    transition: all .15s;
+    display: block;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .guess-btn:hover { background: var(--surface2); border-color: var(--border-md); }
+  .guess-btn.selected-guess { border: 2px solid var(--purple); background: var(--purple-light); color: var(--purple); }
+  .guess-btn.correct-guess { border: 2px solid var(--green); background: var(--green-light); color: var(--green-dark); }
+  .guess-btn.wrong-guess { border: 2px solid var(--red); background: var(--red-light); color: var(--red); }
+
+  .reveal-btn {
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: var(--r-md);
+    border: none;
+    cursor: pointer;
+    background: var(--blue);
+    color: #E6F1FB;
+    font-family: 'DM Sans', sans-serif;
+    transition: background .15s;
+  }
+  .reveal-btn:hover { background: var(--blue-dark); }
+  .reveal-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  .next-btn {
+    padding: 10px 28px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: var(--r-md);
+    border: none;
+    cursor: pointer;
+    background: var(--blue);
+    color: #E6F1FB;
+    font-family: 'DM Sans', sans-serif;
+    transition: background .15s;
+  }
+  .next-btn:hover { background: var(--blue-dark); }
+
+  .feedback-box {
+    border-radius: var(--r-md);
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 1.25rem;
+  }
+  .feedback-win { background: var(--green-light); color: var(--green-dark); }
+  .feedback-lose { background: var(--red-light); color: var(--red); }
+
+  .reveal-seg {
+    width: 100%;
+    text-align: left;
+    padding: 10px 14px;
+    border-radius: var(--r-md);
+    margin-bottom: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .reveal-seg.is-breakeven { border: 2px solid var(--green); background: var(--green-light); }
+  .reveal-seg.is-over { border: 1px solid #F09595; background: #fff5f5; }
+
+  .seg-row-top { display: flex; align-items: center; justify-content: space-between; }
+  .seg-result { font-size: 12px; font-weight: 500; }
+  .seg-result.win { color: var(--green); }
+  .seg-result.lose { color: var(--red); }
+
+  .bar-section { margin-bottom: 1.25rem; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .bar-index { font-size: 11px; color: var(--text-3); min-width: 14px; text-align: center; font-family: 'DM Mono', monospace; }
+  .bar-track { flex: 1; height: 22px; background: var(--surface2); border-radius: var(--r-md); overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: var(--r-md); display: flex; align-items: center; padding: 0 8px; font-size: 11px; font-weight: 500; font-family: 'DM Mono', monospace; transition: width .5s ease; white-space: nowrap; }
+  .bar-addr { background: #B5D4F4; color: var(--blue-dark); }
+  .bar-over { background: #F09595; color: var(--red); }
+  .bar-net { background: #C0DD97; color: var(--green-dark); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
+
+  .concept-box {
+    border-left: 3px solid var(--blue);
+    border-radius: 0 var(--r-md) var(--r-md) 0;
+    background: var(--blue-light);
+    padding: 10px 14px;
+    margin-top: 12px;
+  }
+  .concept-title { font-size: 11px; font-weight: 500; color: var(--blue); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+  .concept-text { font-size: 13px; color: var(--blue-dark); line-height: 1.6; }
+
+  .reveal-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+
+  .bottom-row { display: flex; justify-content: flex-end; margin-top: 1rem; }
+
+  /* Summary */
+  .summary-wrap { text-align: center; }
+  .score-circle {
+    width: 90px; height: 90px; border-radius: 50%;
+    background: var(--blue-light); border: 3px solid var(--blue);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin: 0 auto 1rem;
+  }
+  .score-big { font-size: 26px; font-weight: 500; color: var(--blue-dark); font-family: 'DM Mono', monospace; line-height: 1; }
+  .score-denom { font-size: 12px; color: var(--blue); }
+  .summary-grade { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+  .summary-sub { font-size: 14px; color: var(--text-2); margin-bottom: 2rem; }
+
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+    text-align: left;
+  }
+  .summary-card h3 { font-size: 14px; font-weight: 500; margin-bottom: 12px; }
+  .round-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .round-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .round-row-name { font-size: 13px; color: var(--text); }
+  .round-row-score { font-size: 13px; font-weight: 500; font-family: 'DM Mono', monospace; }
+
+  .takeaway-list { display: flex; flex-direction: column; gap: 8px; }
+  .takeaway-item {
+    font-size: 13px; color: var(--text); line-height: 1.6;
+    padding: 8px 12px; border-left: 3px solid var(--blue);
+    background: var(--surface2);
+    border-radius: 0 var(--r-md) var(--r-md) 0;
+  }
+  .takeaway-item.green { border-color: var(--green); }
+  .takeaway-item.amber { border-color: #EF9F27; }
+
+  .restart-btn {
+    padding: 11px 32px;
+    font-size: 14px; font-weight: 500;
+    border-radius: var(--r-md);
+    border: none; cursor: pointer;
+    background: var(--blue); color: #E6F1FB;
+    font-family: 'DM Sans', sans-serif;
+    transition: background .15s;
+  }
+  .restart-btn:hover { background: var(--blue-dark); }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">
+    Addressable vs. Network TV
+    <span class="header-badge">Breakeven Game</span>
+  </div>
+  <div class="header-score">Score: <span id="headerScore">0</span> / 100</div>
+</header>
+
+<main>
+  <h2 class="sr-only">Addressable TV vs. Network TV Breakeven Analysis Game — 5 rounds</h2>
+  <div id="app"></div>
+</main>
+
+<script>
+const NETWORK_COST = 1776;
+
+const ROUNDS = [
+  {
+    brand: "Harley-Davidson",
+    brief: "You're the media planner for Harley-Davidson. Your targets are die-hard motorcycle enthusiasts — a famously narrow demographic. The Seinfeld spot costs $1,776 and reaches 46,886 people. Explore the addressable segments, then predict: after which segment does the network spot become the cheaper option?",
+    context: "Narrow niche — classic addressable use case",
+    segments: [
+      {name:"Motorcycle owners (registered)", cost:521.03},
+      {name:"Outdoor adventure enthusiasts", cost:522.75},
+      {name:"Men 35–54, HHI $75k+", cost:521.95},
+      {name:"Classic rock / country music fans", cost:519.07},
+      {name:"DIY auto mechanics", cost:524.12},
+    ],
+    breakeven: 3,
+    concept: "Harley's audience is extremely narrow. Three addressable segments ($1,565) still beat the $1,776 network buy — but adding a 4th pushes to $2,089. This is the sweet spot for addressable: surgical, not wasteful.",
+    guessOptions: ["After segment 1","After segment 2","After segment 3","After segment 4","Never — addressable always wins"]
+  },
+  {
+    brand: "McDonald's",
+    brief: "McDonald's wants to advertise a new value meal. Their target is essentially everyone who eats fast food — a very broad audience. Same Seinfeld spot at $1,776. When does the network buy become the smarter investment?",
+    context: "Mass-market brand — broad audience",
+    segments: [
+      {name:"QSR frequent visitors (2x/week+)", cost:527.55},
+      {name:"Households with children under 12", cost:524.90},
+      {name:"Budget-conscious shoppers", cost:523.57},
+      {name:"Late-night snackers (11pm–2am)", cost:519.60},
+      {name:"Sports event viewers", cost:520.92},
+    ],
+    breakeven: 4,
+    concept: "With 3 segments, addressable is $1,576 vs. $1,776 — still wins. At 4 segments it's $2,096 — network wins. McDonald's broad appeal means they'll often need 4+ segments, making network the smarter default.",
+    guessOptions: ["After segment 1","After segment 2","After segment 3","After segment 4","Never — addressable always wins"]
+  },
+  {
+    brand: "Northwestern Mutual",
+    brief: "Northwestern Mutual sells financial planning services to high-income professionals nearing retirement. Their target is very specific. Same $1,776 Seinfeld spot. At what point does the fixed network cost become the better deal?",
+    context: "High-precision financial product",
+    segments: [
+      {name:"Households with investable assets $500k+", cost:517.98},
+      {name:"Adults 50–65 in professional roles", cost:519.85},
+      {name:"Business owners / self-employed", cost:519.07},
+      {name:"College-educated homeowners", cost:522.75},
+      {name:"Parents of college-age children", cost:521.19},
+    ],
+    breakeven: 3,
+    concept: "Northwestern Mutual only needs 2–3 of these high-value segments to cover their real target. At 3 segments ($1,557) they still beat network. At 4 ($2,079) network wins. Precision targeting is their natural fit.",
+    guessOptions: ["After segment 1","After segment 2","After segment 3","After segment 4","Never — addressable always wins"]
+  },
+  {
+    brand: "Tide (P&G)",
+    brief: "Tide laundry detergent is used by nearly every U.S. household. Their product category is one of the broadest in consumer goods. Same $1,776 Seinfeld spot. When does addressable stop making financial sense?",
+    context: "Near-universal product — hardest case for addressable",
+    segments: [
+      {name:"Households doing 5+ loads/week", cost:524.90},
+      {name:"Families with young children", cost:523.57},
+      {name:"Pet owners", cost:521.42},
+      {name:"Adults 25–54 (primary shoppers)", cost:527.55},
+      {name:"Households with gym memberships", cost:520.12},
+    ],
+    breakeven: 4,
+    concept: "Tide needs nearly everyone — after 3 addressable segments ($1,570) you still beat network, but barely. At 4 ($2,097) network wins easily. For truly mass-market products, network almost always wins at scale.",
+    guessOptions: ["After segment 1","After segment 2","After segment 3","After segment 4","Never — addressable always wins"]
+  },
+  {
+    brand: "Peloton",
+    brief: "Peloton targets affluent fitness enthusiasts who value premium home workout equipment. Their ideal buyer is specific but not ultra-narrow. Same $1,776 Seinfeld spot. Predict when network becomes the better buy.",
+    context: "Premium niche — interesting middle-ground case",
+    segments: [
+      {name:"Home fitness equipment owners", cost:520.12},
+      {name:"HHI $100k+, fitness app users", cost:522.40},
+      {name:"Adults 30–50, suburban homeowners", cost:523.57},
+      {name:"Yoga / cycling class attendees", cost:519.07},
+      {name:"Health-conscious parents", cost:525.17},
+    ],
+    breakeven: 3,
+    concept: "Peloton's premium price means they want highly-qualified buyers, not broad reach. Three segments ($1,566) still beats network. At 4 ($2,085) network wins. Their narrow ideal customer profile makes addressable the natural first choice.",
+    guessOptions: ["After segment 1","After segment 2","After segment 3","After segment 4","Never — addressable always wins"]
+  }
+];
+
+let currentRound = 0;
+let totalScore = 0;
+let roundScores = [];
+let phase = 'guess';
+let selectedGuess = null;
+let selectedSegs = [];
+
+function fmt(n){
+  return '$' + n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function updateHeaderScore(){
+  document.getElementById('headerScore').textContent = totalScore;
+}
+
+function render(){
+  const app = document.getElementById('app');
+  if(currentRound >= ROUNDS.length){ renderSummary(app); return; }
+  const r = ROUNDS[currentRound];
+  if(phase === 'guess') renderGuess(r, app);
+  else renderReveal(r, app);
+  updateHeaderScore();
+}
+
+function renderGuess(r, app){
+  const addrTotal = selectedSegs.reduce((s,i) => s + r.segments[i].cost, 0);
+  const totalColor = addrTotal === 0 ? '' : addrTotal < NETWORK_COST ? ' good' : ' bad';
+
+  const segsHtml = r.segments.map((s,i) => {
+    const sel = selectedSegs.includes(i);
+    return `<button class="seg-btn${sel?' selected':''}" onclick="toggleSeg(${i})">
+      <div class="seg-name">${i+1}. ${s.name}</div>
+      <div class="seg-meta">Addressable cost: ${fmt(s.cost)}&nbsp;&nbsp;|&nbsp;&nbsp;CPM: $26.51</div>
+    </button>`;
+  }).join('');
+
+  const guessHtml = r.guessOptions.map((o,i) => {
+    const sel = selectedGuess === i;
+    return `<button class="guess-btn${sel?' selected-guess':''}" onclick="selectGuess(${i})">${o}</button>`;
+  }).join('');
+
+  app.innerHTML = `
+    <div class="progress-row">
+      ${ROUNDS.map((_,i) => `<div class="pip${i<currentRound?' done':i===currentRound?' active':''}"></div>`).join('')}
+      <span class="pip-label">Round ${currentRound+1} of ${ROUNDS.length}</span>
+      <span class="phase-label guess" style="margin-left:auto;">Explore &amp; predict</span>
+    </div>
+
+    <div class="brief-card">
+      <div class="brief-tags">
+        <span class="tag tag-blue">${r.brand}</span>
+        <span class="tag tag-amber">${r.context}</span>
+      </div>
+      <p class="brief-text">${r.brief}</p>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="col-heading">Step 1 — explore segments</div>
+        ${segsHtml}
+        <div class="running-totals">
+          <div class="metric">
+            <div class="metric-label">Addressable running total</div>
+            <div class="metric-value${totalColor}">${addrTotal === 0 ? '—' : fmt(addrTotal)}</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Network spot cost</div>
+            <div class="metric-value">${fmt(NETWORK_COST)}</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="col-heading">Step 2 — make your prediction</div>
+        <p style="font-size:13px;color:var(--text-2);margin-bottom:10px;line-height:1.6;">At what point does the Seinfeld network spot become the cheaper option?</p>
+        ${guessHtml}
+        <button class="reveal-btn" onclick="submitGuess()" ${selectedGuess===null?'disabled':''}>Reveal answer</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderReveal(r, app){
+  const correct = selectedGuess === (r.breakeven - 1);
+  const feedbackHtml = correct
+    ? `<div class="feedback-box feedback-win">Correct! +20 points — breakeven hits at segment ${r.breakeven}.</div>`
+    : `<div class="feedback-box feedback-lose">Not quite — the breakeven is after segment ${r.breakeven}. You predicted: "${r.guessOptions[selectedGuess]}"</div>`;
+
+  let running = 0;
+  const segsHtml = r.segments.map((s,i) => {
+    running += s.cost;
+    const isBreakeven = (i+1) === r.breakeven;
+    const isOver = running > NETWORK_COST;
+    const cls = isBreakeven ? 'is-breakeven' : isOver ? 'is-over' : '';
+    const beTag = isBreakeven ? `<span class="tag tag-green" style="margin-left:6px;">breakeven</span>` : '';
+    const resultCls = running < NETWORK_COST ? 'win' : 'lose';
+    const resultLabel = running < NETWORK_COST ? 'addr wins' : 'network wins';
+    return `<div class="reveal-seg ${cls}">
+      <div class="seg-row-top">
+        <div>
+          <span class="seg-name">${i+1}. ${s.name}</span>${beTag}
+          <div class="seg-meta">This segment: ${fmt(s.cost)}&nbsp;&nbsp;Running total: ${fmt(running)}</div>
+        </div>
+        <span class="seg-result ${resultCls}">${resultLabel}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  const allTotals = r.segments.map((_,i) => r.segments.slice(0,i+1).reduce((s,x)=>s+x.cost,0));
+  const maxVal = Math.max(...allTotals, NETWORK_COST) * 1.12;
+
+  const barsHtml = allTotals.map((total,i) => {
+    const pct = Math.min((total/maxVal)*100,100).toFixed(1);
+    const isOver = total > NETWORK_COST;
+    const cls = isOver ? 'bar-over' : 'bar-addr';
+    return `<div class="bar-row">
+      <span class="bar-index">${i+1}</span>
+      <div class="bar-track"><div class="bar-fill ${cls}" style="width:${pct}%;">${fmt(total)}</div></div>
+    </div>`;
+  }).join('');
+
+  const netPct = Math.min((NETWORK_COST/maxVal)*100,100).toFixed(1);
+  const isLast = currentRound === ROUNDS.length - 1;
+
+  app.innerHTML = `
+    <div class="progress-row">
+      ${ROUNDS.map((_,i) => `<div class="pip${i<=currentRound?' done':''}"></div>`).join('')}
+      <span class="pip-label">Round ${currentRound+1} of ${ROUNDS.length}</span>
+      <span class="phase-label reveal" style="margin-left:auto;">Reveal</span>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap;">
+      <span class="tag tag-blue">${r.brand}</span>
+    </div>
+
+    ${feedbackHtml}
+
+    <div class="two-col">
+      <div>
+        <div class="col-heading">Segment-by-segment result</div>
+        ${segsHtml}
+      </div>
+      <div>
+        <div class="col-heading">Cost build-up vs. network</div>
+        <div class="bar-section">
+          ${barsHtml}
+          <hr class="divider">
+          <div class="bar-row">
+            <span class="bar-index">—</span>
+            <div class="bar-track"><div class="bar-fill bar-net" style="width:${netPct}%;">${fmt(NETWORK_COST)} (network)</div></div>
+          </div>
+        </div>
+        <div class="reveal-metrics">
+          <div class="metric"><div class="metric-label">Breakeven segment</div><div class="metric-value">#${r.breakeven}</div></div>
+          <div class="metric"><div class="metric-label">Your answer</div><div class="metric-value" style="color:${correct?'var(--green)':'var(--red)'};">${correct?'Correct':'Seg. '+r.breakeven}</div></div>
+        </div>
+        <div class="concept-box">
+          <div class="concept-title">Key concept</div>
+          <p class="concept-text">${r.concept}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-row">
+      <button class="next-btn" onclick="nextRound()">${isLast ? 'See final score' : 'Next round'}</button>
+    </div>
+  `;
+}
+
+function renderSummary(app){
+  const maxScore = ROUNDS.length * 20;
+  const pct = Math.round(totalScore/maxScore*100);
+  let grade, gradeColor;
+  if(pct >= 80){ grade = 'Sharp analyst'; gradeColor = 'var(--green-dark)'; }
+  else if(pct >= 60){ grade = 'Developing well'; gradeColor = 'var(--amber)'; }
+  else { grade = 'Keep practicing'; gradeColor = 'var(--red)'; }
+
+  const roundRows = roundScores.map((s,i) => `
+    <div class="round-row">
+      <span class="round-row-name">${ROUNDS[i].brand}</span>
+      <span class="round-row-score" style="color:${s>0?'var(--green)':'var(--red)'};">${s>0?'+'+s+' pts':'0 pts'}</span>
+    </div>`).join('');
+
+  app.innerHTML = `
+    <div class="summary-wrap">
+      <div class="score-circle">
+        <span class="score-big">${totalScore}</span>
+        <span class="score-denom">/ ${maxScore}</span>
+      </div>
+      <h2 class="summary-grade" style="color:${gradeColor};">${grade}</h2>
+      <p class="summary-sub">${pct}% accuracy across ${ROUNDS.length} rounds</p>
+
+      <div class="summary-card">
+        <h3>Round-by-round breakdown</h3>
+        ${roundRows}
+        <div class="round-row" style="font-weight:500;">
+          <span class="round-row-name">Total</span>
+          <span class="round-row-score">${totalScore} / ${maxScore}</span>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <h3>What this exercise teaches</h3>
+        <div class="takeaway-list">
+          <div class="takeaway-item">The addressable CPM ($26.51) is lower than the on-target network CPM — but each segment is a separate purchase. Costs add up fast when your audience is broad.</div>
+          <div class="takeaway-item green">Addressable wins when your target is narrow (1–3 segments). Network wins when your audience is broad (4+ segments).</div>
+          <div class="takeaway-item amber">Mass-market brands (McDonald's, Tide) almost always tip toward network. Niche brands (Harley, Northwestern Mutual, Peloton) benefit most from addressable.</div>
+        </div>
+      </div>
+
+      <button class="restart-btn" onclick="restartGame()">Play again</button>
+    </div>
+  `;
+  updateHeaderScore();
+}
+
+function toggleSeg(i){
+  if(phase !== 'guess') return;
+  const idx = selectedSegs.indexOf(i);
+  if(idx >= 0) selectedSegs.splice(idx,1);
+  else selectedSegs.push(i);
+  render();
+}
+
+function selectGuess(i){
+  selectedGuess = i;
+  render();
+}
+
+function submitGuess(){
+  if(selectedGuess === null) return;
+  const correct = selectedGuess === (ROUNDS[currentRound].breakeven - 1);
+  const pts = correct ? 20 : 0;
+  totalScore += pts;
+  roundScores.push(pts);
+  phase = 'reveal';
+  render();
+}
+
+function nextRound(){
+  currentRound++;
+  phase = 'guess';
+  selectedGuess = null;
+  selectedSegs = [];
+  render();
+}
+
+function restartGame(){
+  currentRound = 0;
+  totalScore = 0;
+  roundScores = [];
+  phase = 'guess';
+  selectedGuess = null;
+  selectedSegs = [];
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
